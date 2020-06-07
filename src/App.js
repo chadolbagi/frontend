@@ -4,7 +4,6 @@ import Header from "./components/Header";
 import CallerPage from "./pages/CallerPage";
 import IndexPage from "./pages/IndexPage";
 import OperatorPage from "./pages/OperatorPage";
-import "./App.css";
 import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 
 const App = () => {
