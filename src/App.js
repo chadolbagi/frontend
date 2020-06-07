@@ -1,5 +1,6 @@
 import React from "react";
 import CssBaseline from "@material-ui/core/CssBaseline";
+import Container from "@material-ui/core/Container";
 import Header from "./components/Header";
 import CallerPage from "./pages/CallerPage";
 import IndexPage from "./pages/IndexPage";
@@ -12,17 +13,19 @@ const App = () => {
       <CssBaseline />
       <Header />
 
-      <Switch>
-        <Route path="/caller">
-          <CallerPage />
-        </Route>
-        <Route path="/operator">
-          <OperatorPage />
-        </Route>
-        <Route path="/">
-          <IndexPage />
-        </Route>
-      </Switch>
+      <Container>
+        <Switch>
+          <Route path="/caller">
+            <CallerPage />
+          </Route>
+          <Route path="/operator">
+            <OperatorPage />
+          </Route>
+          <Route path="/">
+            <IndexPage />
+          </Route>
+        </Switch>
+      </Container>
     </Router>
   );
 };
