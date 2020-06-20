@@ -2,7 +2,6 @@ import React from "react";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
 import { makeStyles } from "@material-ui/core/styles";
-import { Link } from "react-router-dom";
 
 const useStyles = makeStyles((theme) => ({
   toolbar: {
@@ -32,17 +31,17 @@ const Header = () => {
   return (
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar className={classes.toolbar}>
-        <Link to="/" className={classes.title}>
+        <a href="/" className={classes.title}>
           CHAMGIRUM
-        </Link>
+        </a>
         <div className={classes.grower} />
         <nav>
-          <Link className={classes.link} to="/operator">
+          <a className={classes.link} href="/operator">
             Operator
-          </Link>
-          <Link className={classes.link} to="/caller">
+          </a>
+          <a className={classes.link} href="/caller">
             Caller
-          </Link>
+          </a>
         </nav>
       </Toolbar>
     </AppBar>
