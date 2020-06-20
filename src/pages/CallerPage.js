@@ -3,6 +3,7 @@ import Button from "@material-ui/core/Button";
 import Box from "@material-ui/core/Box";
 import Typography from "@material-ui/core/Typography";
 import { makeStyles } from "@material-ui/core/styles";
+import AudioManager, { AudioManagerErrorType } from "../AudioManager";
 
 const useStyles = makeStyles((theme) => ({
   wrapper: {
@@ -17,6 +18,28 @@ const CallerPage = () => {
   const [isCalling, setIsCalling] = useState(false);
   const classes = useStyles();
 
+  const onCallButtonClicked = () => {
+    setIsCalling(true);
+
+    const manager = AudioManager.getInstance();
+    manager
+      .requestMicrophonePermission()
+      .then(() => {
+        console.log("got audio permission");
+      })
+      .catch((reason) => {
+        console.log(reason);
+        alert(AudioManagerErrorType[reason]);
+      });
+  };
+
+  const onHangUpButtonClicked = () => {
+    setIsCalling(false);
+
+    const manager = AudioManager.getInstance();
+    manager.close();
+  }
+
   return (
     <Box component="div" textAlign="center" className={classes.wrapper}>
       <Typography variant="h2">Caller Page</Typography>
@@ -24,7 +47,7 @@ const CallerPage = () => {
         variant="contained"
         className={classes.buttons}
         disabled={isCalling}
-        onClick={() => setIsCalling(true)}
+        onClick={onCallButtonClicked}
       >
         Call
       </Button>
@@ -32,7 +55,7 @@ const CallerPage = () => {
         variant="contained"
         className={classes.buttons}
         disabled={!isCalling}
-        onClick={() => setIsCalling(false)}
+        onClick={onHangUpButtonClicked}
       >
         Hang up
       </Button>
