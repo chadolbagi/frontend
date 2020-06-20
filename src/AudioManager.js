@@ -8,7 +8,7 @@ export const AudioManagerErrorType = {
   [ERR_PERMISSION_DENIED]: "Permission for microphone is not allowed",
 };
 
-export class AudioManager {
+export default class AudioManager {
   static _instance;
 
   // (dataFragment: Float32Array) => void
@@ -16,6 +16,7 @@ export class AudioManager {
   audioStream;
   audioContext;
   audioAnalyser;
+  stream;
 
   constructor() {
     this.onAudioFragmentHandler = (_) => {};
@@ -60,6 +61,18 @@ export class AudioManager {
     });
   };
 
+  close() {
+    if (this.stream != null) {
+      this.stream.getTracks().forEach(track => track.stop());
+      this.audioContext.close();
+
+      this.audioStream = null;
+      this.audioContext = null;
+      this.audioAnalyser = null;
+      this.stream = null;
+    }
+  }
+
   /**
    * A handler function that will be executed when an audio stream is obtained.
    *
@@ -67,6 +80,8 @@ export class AudioManager {
    * be executed with a channelData(Float32Array) parameter.
    */
   onPermissionAllowed = (stream) => {
+    this.stream = stream;
+
     console.log("Permission for microphone is granted", stream);
     this.audioContext = new AudioContext({ sampleRate: WAV_SAMPLE_RATE });
     this.audioStream = this.audioContext.createMediaStreamSource(stream);
