@@ -63,7 +63,7 @@ export default class AudioManager {
 
   close() {
     if (this.stream != null) {
-      this.stream.getTracks().forEach(track => track.stop());
+      this.stream.getTracks().forEach((track) => track.stop());
       this.audioContext.close();
 
       this.audioStream = null;

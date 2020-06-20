@@ -38,7 +38,7 @@ const CallerPage = () => {
 
     const manager = AudioManager.getInstance();
     manager.close();
-  }
+  };
 
   return (
     <Box component="div" textAlign="center" className={classes.wrapper}>
