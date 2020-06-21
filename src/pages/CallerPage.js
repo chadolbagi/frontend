@@ -22,6 +22,9 @@ const CallerPage = () => {
     setIsCalling(true);
 
     const manager = AudioManager.getInstance();
+    manager.onAudioFragmentHandler = (event) => {
+      manager.playAudioChunk(event.inputBuffer.getChannelData(0));
+    }
     manager
       .requestMicrophonePermission()
       .then(() => {

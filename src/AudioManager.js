@@ -11,7 +11,7 @@ export const AudioManagerErrorType = {
 export default class AudioManager {
   static _instance;
 
-  // (dataFragment: Float32Array) => void
+  // (event: AudioProcessingEvent) => void
   onAudioFragmentHandler;
   audioStream;
   audioContext;
@@ -61,7 +61,17 @@ export default class AudioManager {
     });
   };
 
-  close() {
+  playAudioChunk =(dataChunk) => {
+    const audioBuffer = this.audioContext.createBuffer(2, dataChunk.length, 44100);
+    audioBuffer.getChannelData(0).set(dataChunk);
+
+    const source = this.audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(this.audioContext.destination);
+    source.start(0);
+  }
+
+  close = () => {
     if (this.stream != null) {
       this.stream.getTracks().forEach((track) => track.stop());
       this.audioContext.close();
@@ -88,7 +98,6 @@ export default class AudioManager {
 
     this.audioAnalyser = this.audioContext.createAnalyser();
     this.audioAnalyser.fftSize = 1024;
-
     this.audioStream.connect(this.audioAnalyser);
 
     const processor = this.audioContext.createScriptProcessor(16384, 1, 1);
@@ -96,9 +105,9 @@ export default class AudioManager {
     processor.connect(this.audioContext.destination);
 
     processor.onaudioprocess = (e) => {
+      // e: https://developer.mozilla.org/en-US/docs/Web/API/AudioProcessingEvent
       // We have only 1 channel
-      const channelData = e.inputBuffer.getChannelData(0);
-      this.onAudioFragmentHandler(channelData);
+      this.onAudioFragmentHandler(e);
     };
   };
 }
