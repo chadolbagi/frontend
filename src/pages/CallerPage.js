@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "@material-ui/core/Button";
 import Box from "@material-ui/core/Box";
 import Typography from "@material-ui/core/Typography";
 import { makeStyles } from "@material-ui/core/styles";
 import AudioManager, { AudioManagerErrorType } from "../AudioManager";
+import io from "socket.io-client";
 
 const useStyles = makeStyles((theme) => ({
   wrapper: {
@@ -16,16 +17,34 @@ const useStyles = makeStyles((theme) => ({
 
 const CallerPage = () => {
   const [isCalling, setIsCalling] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [audioManager] = useState(AudioManager.getInstance());
   const classes = useStyles();
+
+  useEffect(() => {
+    if (socket != null) {
+      console.log("Set Handler");
+      socket.on("call:frame", ({ frame }) => {
+        const length = Object.keys(frame).length;
+        audioManager.playAudioChunk(
+          Float32Array.from([...Array(length).keys()].map((key) => frame[key]))
+        );
+      });
+
+      audioManager.onAudioFragmentHandler = (event) => {
+        console.log("Emmited");
+        socket.emit("call:frame", {
+          frame: event.inputBuffer.getChannelData(0),
+        });
+      };
+    }
+  }, [socket, audioManager]);
 
   const onCallButtonClicked = () => {
     setIsCalling(true);
+    setSocket(io(process.env.REACT_APP_SERVER_URL));
 
-    const manager = AudioManager.getInstance();
-    manager.onAudioFragmentHandler = (event) => {
-      manager.playAudioChunk(event.inputBuffer.getChannelData(0));
-    }
-    manager
+    audioManager
       .requestMicrophonePermission()
       .then(() => {
         console.log("got audio permission");
@@ -38,9 +57,9 @@ const CallerPage = () => {
 
   const onHangUpButtonClicked = () => {
     setIsCalling(false);
-
-    const manager = AudioManager.getInstance();
-    manager.close();
+    socket.disconnect();
+    setSocket(null);
+    audioManager.close();
   };
 
   return (

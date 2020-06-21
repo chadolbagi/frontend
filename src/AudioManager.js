@@ -61,15 +61,21 @@ export default class AudioManager {
     });
   };
 
-  playAudioChunk =(dataChunk) => {
-    const audioBuffer = this.audioContext.createBuffer(2, dataChunk.length, 44100);
-    audioBuffer.getChannelData(0).set(dataChunk);
+  playAudioChunk = (dataChunk) => {
+    if (this.audioContext != null) {
+      const audioBuffer = this.audioContext.createBuffer(
+        1,
+        dataChunk.length,
+        WAV_SAMPLE_RATE
+      );
+      audioBuffer.getChannelData(0).set(dataChunk);
 
-    const source = this.audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(this.audioContext.destination);
-    source.start(0);
-  }
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.audioContext.destination);
+      source.start(0);
+    }
+  };
 
   close = () => {
     if (this.stream != null) {
@@ -81,7 +87,7 @@ export default class AudioManager {
       this.audioAnalyser = null;
       this.stream = null;
     }
-  }
+  };
 
   /**
    * A handler function that will be executed when an audio stream is obtained.
@@ -100,7 +106,8 @@ export default class AudioManager {
     this.audioAnalyser.fftSize = 1024;
     this.audioStream.connect(this.audioAnalyser);
 
-    const processor = this.audioContext.createScriptProcessor(16384, 1, 1);
+    // const processor = this.audioContext.createScriptProcessor(16384, 1, 1);
+    const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
     this.audioStream.connect(processor);
     processor.connect(this.audioContext.destination);
 
