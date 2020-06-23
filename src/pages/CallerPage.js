@@ -18,6 +18,8 @@ const useStyles = makeStyles((theme) => ({
 const CallerPage = () => {
   const [isCalling, setIsCalling] = useState(false);
   const [socket, setSocket] = useState(null);
+  const [padding, setPadding] = useState(5);
+  const [said, setSaid] = useState(false);
   const [audioManager] = useState(AudioManager.getInstance());
   const classes = useStyles();
 
@@ -30,15 +32,38 @@ const CallerPage = () => {
           Float32Array.from([...Array(length).keys()].map((key) => frame[key]))
         );
       });
-
-      audioManager.onAudioFragmentHandler = (event) => {
-        console.log("Emmited");
-        socket.emit("call:frame", {
-          frame: event.inputBuffer.getChannelData(0),
-        });
-      };
     }
   }, [socket, audioManager]);
+
+  audioManager.onAudioFragmentHandler = (event) => {
+    const channelData = event.inputBuffer.getChannelData(0);
+    const mean = channelData.reduce((a, b) => a + b) / channelData.length;
+    const stddev = Math.pow(channelData.map(k => Math.pow(k - mean, 2)).reduce((a, b) => a + b) / (channelData.length - 1), 0.5);
+
+
+    let flag = false;
+    if (stddev < 0.08) {
+      if (said) {
+        if (padding > 0) {
+          setPadding(padding - 1);
+        } else {
+          flag = true;
+          setPadding(5);
+        }
+      }
+    }
+    else {
+      setPadding(5)
+      setSaid(true);
+    }
+
+    if (flag) {
+      console.log("EOS+++++++++++++++++++++++++++++++++++++++++");
+      setSaid(false);
+    }
+
+    socket.emit("call:frame", { frame: channelData, isEos: flag });
+  };
 
   const onCallButtonClicked = () => {
     setIsCalling(true);
