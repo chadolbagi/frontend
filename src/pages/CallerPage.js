@@ -26,6 +26,7 @@ const CallerPage = () => {
   useEffect(() => {
     if (socket != null) {
       console.log("Set Handler");
+      socket.emit("call:request")
       socket.on("call:frame", ({ frame }) => {
         const length = Object.keys(frame).length;
         audioManager.playAudioChunk(
@@ -67,7 +68,9 @@ const CallerPage = () => {
 
   const onCallButtonClicked = () => {
     setIsCalling(true);
-    setSocket(io(process.env.REACT_APP_SERVER_URL));
+    var _socket = io(process.env.REACT_APP_SERVER_URL);
+    setSocket(_socket);
+    _socket.emit("conn:register", { type: "caller" })
 
     audioManager
       .requestMicrophonePermission()
