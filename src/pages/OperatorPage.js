@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Paper from "@material-ui/core/Paper";
 import Typography from "@material-ui/core/Typography";
 import Table from "@material-ui/core/Table";
@@ -8,7 +8,9 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import { makeStyles } from "@material-ui/core/styles";
 import GoogleMapReact from "google-map-react";
+import io from "socket.io-client";
 
+import AudioManager from "../AudioManager";
 import Bubble from "../components/Bubble";
 
 const useStyles = makeStyles((theme) => ({
@@ -42,7 +44,23 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const OperatorPage = () => {
+  const [socket] = useState(io(process.env.REACT_APP_SERVER_URL));
+  const [audioManager] = useState(AudioManager.getInstance());
   const classes = useStyles();
+
+  useEffect(() => {
+    if (socket != null) {
+      console.log("Set Handler");
+
+      socket.emit("conn:register", { type: "operator" });
+      socket.on("call:frame", ({ frame }) => {
+        const length = Object.keys(frame).length;
+        audioManager.playAudioChunk(
+          Float32Array.from([...Array(length).keys()].map((key) => frame[key]))
+        );
+      });
+    }
+  })
 
   const rows = [
     {
