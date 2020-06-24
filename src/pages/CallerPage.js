@@ -6,6 +6,8 @@ import { makeStyles } from "@material-ui/core/styles";
 import AudioManager, { AudioManagerErrorType } from "../AudioManager";
 import io from "socket.io-client";
 
+let registered = false;
+
 const useStyles = makeStyles((theme) => ({
   wrapper: {
     marginTop: theme.spacing(5),
@@ -15,32 +17,47 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
+function convertFloat32ToInt16(buffer) {
+  let l = buffer.length;
+  const buf = new Int16Array(l);
+  while (l--) {
+    buf[l] = Math.min(1, buffer[l]) * 0x7fff;
+  }
+  return buf.buffer;
+}
+
 const CallerPage = () => {
   const [isCalling, setIsCalling] = useState(false);
-  const [socket, setSocket] = useState(null);
+  const [socket] = useState(io(process.env.REACT_APP_SERVER_URL));
   const [padding, setPadding] = useState(5);
   const [said, setSaid] = useState(false);
   const [audioManager] = useState(AudioManager.getInstance());
   const classes = useStyles();
 
   useEffect(() => {
-    if (socket != null) {
-      console.log("Set Handler");
-      socket.emit("call:request")
-      socket.on("call:frame", ({ frame }) => {
-        const length = Object.keys(frame).length;
-        audioManager.playAudioChunk(
-          Float32Array.from([...Array(length).keys()].map((key) => frame[key]))
-        );
-      });
-    }
+    registered = false;
+    console.log("Set Handler");
+
+    socket.emit("conn:register", { type: "caller" });
+    socket.on("call:frame", ({ frame }) => {
+      const length = Object.keys(frame).length;
+      audioManager.playAudioChunk(
+        Float32Array.from([...Array(length).keys()].map((key) => frame[key]))
+      );
+    });
+    socket.on("call:request:success", () => {
+      registered = true;
+    });
   }, [socket, audioManager]);
 
   audioManager.onAudioFragmentHandler = (event) => {
     const channelData = event.inputBuffer.getChannelData(0);
     const mean = channelData.reduce((a, b) => a + b) / channelData.length;
-    const stddev = Math.pow(channelData.map(k => Math.pow(k - mean, 2)).reduce((a, b) => a + b) / (channelData.length - 1), 0.5);
-
+    const stddev = Math.pow(
+      channelData.map((k) => Math.pow(k - mean, 2)).reduce((a, b) => a + b) /
+        (channelData.length - 1),
+      0.5
+    );
 
     let flag = false;
     if (stddev < 0.08) {
@@ -52,9 +69,8 @@ const CallerPage = () => {
           setPadding(5);
         }
       }
-    }
-    else {
-      setPadding(5)
+    } else {
+      setPadding(5);
       setSaid(true);
     }
 
@@ -63,14 +79,17 @@ const CallerPage = () => {
       setSaid(false);
     }
 
-    socket.emit("call:frame", { frame: channelData, isEos: flag });
+    console.log(registered);
+    if (registered)
+      socket.emit("call:frame", {
+        frame: convertFloat32ToInt16(channelData),
+        isEos: flag,
+      });
   };
 
   const onCallButtonClicked = () => {
     setIsCalling(true);
-    var _socket = io(process.env.REACT_APP_SERVER_URL);
-    setSocket(_socket);
-    _socket.emit("conn:register", { type: "caller" })
+    socket.emit("call:request");
 
     audioManager
       .requestMicrophonePermission()
@@ -85,8 +104,6 @@ const CallerPage = () => {
 
   const onHangUpButtonClicked = () => {
     setIsCalling(false);
-    socket.disconnect();
-    setSocket(null);
     audioManager.close();
   };
 

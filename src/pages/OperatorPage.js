@@ -49,18 +49,17 @@ const OperatorPage = () => {
   const classes = useStyles();
 
   useEffect(() => {
-    if (socket != null) {
-      console.log("Set Handler");
+    console.log("Set Handler");
 
-      socket.emit("conn:register", { type: "operator" });
-      socket.on("call:frame", ({ frame }) => {
-        const length = Object.keys(frame).length;
-        audioManager.playAudioChunk(
-          Float32Array.from([...Array(length).keys()].map((key) => frame[key]))
-        );
-      });
-    }
-  })
+    socket.emit("conn:register", { type: "operator" });
+    socket.on("call:frame", ({ frame }) => {
+      console.log("Got");
+      const length = Object.keys(frame).length;
+      audioManager.playAudioChunk(
+        Float32Array.from([...Array(length).keys()].map((key) => frame[key]))
+      );
+    });
+  });
 
   const rows = [
     {
