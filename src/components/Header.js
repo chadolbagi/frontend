@@ -32,7 +32,7 @@ const Header = () => {
     <AppBar position="static" color="default" elevation={1}>
       <Toolbar className={classes.toolbar}>
         <a href="/" className={classes.title}>
-          CHAMGIRUM
+          911 Assistant
         </a>
         <div className={classes.grower} />
         <nav>
