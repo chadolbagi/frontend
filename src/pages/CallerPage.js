@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Button from "@material-ui/core/Button";
 import Box from "@material-ui/core/Box";
 import Typography from "@material-ui/core/Typography";
 import { makeStyles } from "@material-ui/core/styles";
 import AudioManager, { AudioManagerErrorType } from "../AudioManager";
+import io from "socket.io-client";
 
 const useStyles = makeStyles((theme) => ({
   wrapper: {
@@ -16,13 +17,59 @@ const useStyles = makeStyles((theme) => ({
 
 const CallerPage = () => {
   const [isCalling, setIsCalling] = useState(false);
+  const [socket, setSocket] = useState(null);
+  const [padding, setPadding] = useState(5);
+  const [said, setSaid] = useState(false);
+  const [audioManager] = useState(AudioManager.getInstance());
   const classes = useStyles();
+
+  useEffect(() => {
+    if (socket != null) {
+      console.log("Set Handler");
+      socket.on("call:frame", ({ frame }) => {
+        const length = Object.keys(frame).length;
+        audioManager.playAudioChunk(
+          Float32Array.from([...Array(length).keys()].map((key) => frame[key]))
+        );
+      });
+    }
+  }, [socket, audioManager]);
+
+  audioManager.onAudioFragmentHandler = (event) => {
+    const channelData = event.inputBuffer.getChannelData(0);
+    const mean = channelData.reduce((a, b) => a + b) / channelData.length;
+    const stddev = Math.pow(channelData.map(k => Math.pow(k - mean, 2)).reduce((a, b) => a + b) / (channelData.length - 1), 0.5);
+
+
+    let flag = false;
+    if (stddev < 0.08) {
+      if (said) {
+        if (padding > 0) {
+          setPadding(padding - 1);
+        } else {
+          flag = true;
+          setPadding(5);
+        }
+      }
+    }
+    else {
+      setPadding(5)
+      setSaid(true);
+    }
+
+    if (flag) {
+      console.log("EOS+++++++++++++++++++++++++++++++++++++++++");
+      setSaid(false);
+    }
+
+    socket.emit("call:frame", { frame: channelData, isEos: flag });
+  };
 
   const onCallButtonClicked = () => {
     setIsCalling(true);
+    setSocket(io(process.env.REACT_APP_SERVER_URL));
 
-    const manager = AudioManager.getInstance();
-    manager
+    audioManager
       .requestMicrophonePermission()
       .then(() => {
         console.log("got audio permission");
@@ -35,9 +82,9 @@ const CallerPage = () => {
 
   const onHangUpButtonClicked = () => {
     setIsCalling(false);
-
-    const manager = AudioManager.getInstance();
-    manager.close();
+    socket.disconnect();
+    setSocket(null);
+    audioManager.close();
   };
 
   return (

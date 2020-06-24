@@ -11,7 +11,7 @@ export const AudioManagerErrorType = {
 export default class AudioManager {
   static _instance;
 
-  // (dataFragment: Float32Array) => void
+  // (event: AudioProcessingEvent) => void
   onAudioFragmentHandler;
   audioStream;
   audioContext;
@@ -61,7 +61,23 @@ export default class AudioManager {
     });
   };
 
-  close() {
+  playAudioChunk = (dataChunk) => {
+    if (this.audioContext != null) {
+      const audioBuffer = this.audioContext.createBuffer(
+        1,
+        dataChunk.length,
+        WAV_SAMPLE_RATE
+      );
+      audioBuffer.getChannelData(0).set(dataChunk);
+
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(this.audioContext.destination);
+      source.start(0);
+    }
+  };
+
+  close = () => {
     if (this.stream != null) {
       this.stream.getTracks().forEach((track) => track.stop());
       this.audioContext.close();
@@ -71,7 +87,7 @@ export default class AudioManager {
       this.audioAnalyser = null;
       this.stream = null;
     }
-  }
+  };
 
   /**
    * A handler function that will be executed when an audio stream is obtained.
@@ -88,17 +104,17 @@ export default class AudioManager {
 
     this.audioAnalyser = this.audioContext.createAnalyser();
     this.audioAnalyser.fftSize = 1024;
-
     this.audioStream.connect(this.audioAnalyser);
 
-    const processor = this.audioContext.createScriptProcessor(16384, 1, 1);
+    // const processor = this.audioContext.createScriptProcessor(16384, 1, 1);
+    const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
     this.audioStream.connect(processor);
     processor.connect(this.audioContext.destination);
 
     processor.onaudioprocess = (e) => {
+      // e: https://developer.mozilla.org/en-US/docs/Web/API/AudioProcessingEvent
       // We have only 1 channel
-      const channelData = e.inputBuffer.getChannelData(0);
-      this.onAudioFragmentHandler(channelData);
+      this.onAudioFragmentHandler(e);
     };
   };
 }
